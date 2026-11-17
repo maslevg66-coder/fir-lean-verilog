@@ -1,68 +1,101 @@
-# Del entero ideal al bit: refinamiento verificado de un núcleo DSP en Lean 4
+# De la especificación al RTL verificado: validación por traducción y
+# refinamiento a punto fijo de núcleos DSP en Lean 4
 
-**Aspirante:** [Gustavo Abraham Mas Levario] · Especialidad en Sistemas Digitales
-**Programa:** MCC / MCIC, CIC-IPN · LGAC SyTCAD
+**Aspirante:** [nombre] · Especialidad en Sistemas Digitales
+**Programa:** MCIC, CIC-IPN · LGAC SyTCAD
+**Laboratorio:** Microtecnología y Sistemas Embebidos (MICROSE)
 
-## 1. Problema
-Los núcleos de procesamiento digital se validan hoy por simulación con un
-conjunto finito de vectores. La corrección se argumenta, no se demuestra.
-Además, la cadena HDL -> netlist descansa en compiladores no verificados.
-Existe trabajo maduro en Coq y HOL4 (Fe-Si, Koika, Lutsig), pero el ecosistema
-Lean 4 apenas comienza a aplicarse a hardware.
+## 1. Problema y encaje institucional
+El CIC desarrolla una metodología de verificación de hardware con UVM
+(SIP 2026). UVM verifica por simulación: cobertura de escenarios y estímulos
+aleatorios restringidos; no establece corrección para todas las entradas.
+La verificación deductiva cubre ese hueco y es complementaria, no sustituta.
+Este trabajo propone cerrar formalmente el último salto de una cadena
+especificación -> RTL y aportar certificados verificables por instancia.
 
 ## 2. Pregunta de investigación
-Puede demostrarse en Lean 4 que un filtro FIR emitido a Verilog con buses de
-W bits satisface su especificacion sobre enteros, bajo una cota de entrada
-explicita, y que el traductor que genera ese Verilog preserva la semantica?
+Puede cerrarse formalmente el salto del modelo de bits al texto Verilog
+mediante validación por traducción con certificados comprobables en Lean,
+y extenderse el refinamiento ya demostrado a punto fijo con cota de error
+de cuantización?
 
 ## 3. Objetivo general
-Construir y verificar en Lean 4 una cadena completa especificacion -> mini-HDL
--> Verilog para un banco de filtros FIR, con refinamiento demostrado de Int a
-BitVec W y verificacion del emisor, culminando en un nucleo de deteccion QRS
-evaluado con registros reales y sintetizado en FPGA.
+Completar una cadena verificada de especificación matemática a RTL para
+núcleos DSP, verificando el emisor de Verilog y refinando la aritmética a
+punto fijo, y evaluarla como complemento deductivo del flujo de verificación
+por simulación, con un núcleo de detección QRS en FPGA.
 
-## 4. Objetivos especificos
-1. Refinar la semantica del mini-HDL de Int a BitVec W y demostrar el teorema
-   de refinamiento bajo la condicion de no desbordamiento sum|h[k]|*B < 2^(W-1).
-2. Verificar el emisor: dotar de semantica formal a un subconjunto de Verilog
-   y demostrar que el netlist generado es equivalente ciclo a ciclo a `eval`.
-3. Extender a punto fijo Qm.n con cota de error de cuantizacion demostrada.
-4. Componer un banco Haar/Daubechies-4, demostrar reconstruccion perfecta y
-   evaluar el detector QRS sobre MIT-BIH y en FPGA (area, Fmax, latencia).
+## 4. Objetivos específicos
+1. Dotar de semántica formal a un subconjunto de Verilog y demostrar que el
+   netlist emitido es equivalente ciclo a ciclo a `evalB`. Alternativa
+   acotada: validación por traducción, con un certificado por instancia
+   descargable a `bv_decide` (bitblasting con certificado SAT verificado
+   dentro de Lean).
+2. Refinar a punto fijo Qm.n y demostrar una cota del error de cuantización
+   respecto de la especificación sobre enteros.
+3. Componer un banco de filtros wavelet (Haar, Daubechies-4) y demostrar la
+   propiedad de reconstrucción perfecta; construir el núcleo QRS.
+4. Evaluar el núcleo: comparar cobertura y costo contra un flujo basado en
+   simulación, sintetizar en FPGA (área, Fmax, latencia) y medir el detector
+   QRS sobre registros MIT-BIH.
 
-## 5. Metodologia
-Investigacion aplicada de caracter experimental-formal, en cuatro etapas
-acumulativas. Cada etapa produce (a) un artefacto en Lean con teoremas sin
-`sorry`, auditados con `#print axioms`, y (b) evidencia empirica independiente
-por simulacion en Icarus Verilog y sintesis en Yosys. El criterio de exito es
-doble: prueba formal verificable por el kernel y coincidencia con simulacion.
+## 5. Metodología
+Investigación aplicada, formal-experimental, en etapas acumulativas. Cada
+etapa entrega (a) artefactos en Lean auditados con `#print axioms` y sin
+`sorryAx`, y (b) evidencia empírica independiente por simulación en Icarus
+Verilog y síntesis en Yosys. Criterio de éxito doble: prueba aceptada por el
+kernel y coincidencia con simulación.
 
-## 6. Trabajo preliminar ya realizado
-Prototipo funcional de tres capas, disponible en repositorio:
-- Especificacion `y[n] = sum h[k]*x[n-k]` sobre enteros.
-- Mini-HDL inductivo `Expr` con semantica ciclo a ciclo.
-- Teorema `firCircuit_correct` demostrado por induccion generalizada sobre la
-  lista de coeficientes; sin `sorryAx` (solo propext y Quot.sound).
-- Emisor a Verilog y testbench: 64 vectores generados desde Lean coinciden con
-  la simulacion; al corromper un vector, el testbench lo detecta.
-- Sintesis Yosys: 403 celdas, 64 flip-flops, sin multiplicadores.
-Caso de estudio: derivada del detector QRS de Pan-Tompkins, h = [1,2,0,-2,-1].
+## 6. Trabajo preliminar concluido
+Repositorio público, reproducible con `make all`. Sin Mathlib. Lean 4.20.0
+anclado por `lean-toolchain`. Teoremas demostrados, ninguno con `sorryAx`:
 
-## 7. Cronograma (4 semestres)
-S1: asignaturas nucleo; objetivo 1 (BitVec); registro del tema.
-S2: objetivo 2 (emisor verificado); seminario II.
-S3: objetivos 3 y 4 (punto fijo, banco wavelet, MIT-BIH); articulo en congreso.
-S4: implementacion FPGA, redaccion de tesis, examen de grado.
+- `firCircuit_correct`: el circuito del mini-HDL calcula la especificación
+  `y[n] = sum h[k]*x[n-k]` para toda lista de coeficientes, toda entrada y
+  todo ciclo. Inducción generalizada sobre el índice de la cola de la suma.
+- `evalB_ofInt`: **congruencia incondicional**, para todo ancho `w`. La
+  semántica de `BitVec w` es exactamente la ideal reducida módulo 2^w. No
+  requiere ninguna cota de entrada.
+- `evalB_toInt` + `hQT_bound`: **lectura fiel**. Si |x[k]| <= 100 entonces
+  |y[n]| <= 600 < 2^15, y leer el bus como signed devuelve exactamente el
+  entero ideal. Corolario `hQT_16_correct`.
+- Axiomas usados: subconjuntos de {propext, Classical.choice, Quot.sound}.
 
-## 8. Riesgos y mitigacion
-Verificar un emisor completo es ambicioso para una maestria. Mitigacion:
-acotar el subconjunto de Verilog y, si el tiempo aprieta, sustituir la prueba
-del compilador por *translation validation* (un certificado por instancia).
-El objetivo 1 es autocontenido y garantiza un resultado publicable aun si los
-objetivos 2 y 4 se recortan.
+Evidencia empírica: 64/64 vectores generados desde Lean coinciden con la
+simulación; un vector corrompido a propósito es detectado. Síntesis Yosys:
+403 celdas, 64 flip-flops, cero multiplicadores.
+
+Experimento de desbordamiento incluido: con impulso de amplitud 20000 el
+ideal da 40000 y el bus de 16 bits da -25536 (= 40000 - 65536). La
+congruencia módulo 2^16 se cumple; lo que falla es la lectura signed. Esto
+separa con precisión los dos teoremas y muestra por qué solo uno necesita
+cota.
+
+Durante el desarrollo, el oráculo formal detectó un error de temporización
+en el testbench que la inspección de la simulación no había revelado:
+evidencia directa de la complementariedad entre ambos métodos.
+
+**Frontera de confianza restante:** el emisor de Verilog (~60 líneas) es
+código confiado, validado por simulación y no probado. Es el objetivo 1.
+
+## 7. Cronograma (ingreso B27, agosto 2027)
+S1 (ago-dic 2027): núcleo académico; semántica del subconjunto de Verilog;
+                   registro del tema.
+S2 (ene-jun 2028): objetivo 1 cerrado; objetivo 2 (punto fijo); seminario II.
+S3 (ago-dic 2028): objetivo 3 (wavelet, QRS, MIT-BIH); artículo en congreso.
+S4 (ene-jun 2029): objetivo 4 (FPGA y comparación), tesis, examen de grado.
+
+## 8. Riesgos y mitigación
+Verificar un emisor completo excede una maestría. Mitigación: acotar el
+subconjunto de Verilog y sustituir la prueba del compilador por validación
+por traducción, que produce un certificado por instancia y es estrictamente
+más débil pero suficiente en la práctica. El objetivo 2 es autocontenido y
+garantiza resultado publicable aun recortando 1, 3 y 4. La comparación con
+UVM del objetivo 4 es la parte más recortable.
 
 ## 9. Referencias iniciales
-- Lutsig: compilador Verilog verificado en HOL4 (Loow, CPP 2021).
-- Koika: nucleo de diseno de hardware basado en reglas, en Coq (PLDI 2020).
+- Lutsig: compilador Verilog verificado en HOL4 (Lööw, CPP 2021).
+- Kôika: núcleo de diseño de hardware basado en reglas, en Coq (PLDI 2020).
 - Fe-Si: compilador certificado de HDL a circuitos (Braibant y Chlipala).
-- Lean 4: bitblasting de BitVec en Init.Data.BitVec.Bitblast.
+- CircuitProver: marco de verificación de hardware en Lean 4 (2026).
+- Lean 4: bitblasting de BitVec y verificación de certificados SAT.
