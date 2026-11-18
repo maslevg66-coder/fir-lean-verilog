@@ -1,8 +1,8 @@
 # De la especificación al RTL verificado: validación por traducción y
 # refinamiento a punto fijo de núcleos DSP en Lean 4
 
-**Aspirante:** [nombre] · Especialidad en Sistemas Digitales
-**Programa:** MCIC, CIC-IPN · LGAC SyTCAD
+**Aspirante:** [Gustavo A Mas Levario] · Especialidad en Sistemas Digitales
+**Programa:** MCIC, CIC-IPN
 **Laboratorio:** Microtecnología y Sistemas Embebidos (MICROSE)
 
 ## 1. Problema y encaje institucional

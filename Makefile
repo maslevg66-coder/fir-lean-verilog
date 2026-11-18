@@ -22,3 +22,7 @@ wave: sim
 
 clean:
 > rm -f build/fir.v build/sim build/fir.vcd build/syn.log build/hola build/fircheck
+
+.PHONY: audit
+audit: lean
+> lake env lean Audit.lean
